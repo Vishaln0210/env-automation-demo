@@ -1,0 +1,20 @@
+spec:
+  template:
+    spec:
+      containers:
+      - env:
+        - name: JENKINS_URL
+          valueFrom:
+            configMapKeyRef:
+              key: JENKINS_URL
+              name: cscs-config
+        image: nginx
+        name: auth-server
+      - env:
+        - name: JENKINS_URL
+          valueFrom:
+            configMapKeyRef:
+              key: JENKINS_URL
+              name: cscs-config
+        image: nginx
+        name: api-server

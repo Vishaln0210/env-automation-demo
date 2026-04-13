@@ -1,0 +1,3 @@
+JENKINS_URL: http://jenkins.qa.com
+data:
+  JENKINS_URL: http://jenkins.qa.com
