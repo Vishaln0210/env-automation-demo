@@ -1,20 +1,666 @@
+# ──────────────────────────────────────────────────────────────────────────────
+#  deployment.yaml
+#  Services: auth-server | notification-api | asset-management-api
+# ──────────────────────────────────────────────────────────────────────────────
+
+{{- if .Values.deploy.auth_server }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.environment }}-auth-server
+  namespace: {{ .Values.namespace }}
 spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-server
   template:
+    metadata:
+      labels:
+        app: auth-server
     spec:
+      imagePullSecrets:
+        - name: artifact-registry-access
       containers:
-      - env:
-        - name: JENKINS_URL
-          valueFrom:
-            configMapKeyRef:
-              key: JENKINS_URL
-              name: cscs-config
-        image: nginx
-        name: auth-server
-      - env:
-        - name: JENKINS_URL
-          valueFrom:
-            configMapKeyRef:
-              key: JENKINS_URL
-              name: cscs-config
-        image: nginx
-        name: api-server
+        - name: auth-server
+          image: {{ .Values.auth_server.docker_image }}
+          imagePullPolicy: Always
+          env:
+            - name: SPRING_PROFILE
+              value: {{ .Values.spring_profile }}
+            - name: LOG4J_FORMAT_MSG_NO_LOOKUPS
+              value: "{{ .Values.log4j_format_lookup }}"
+            - name: MYSQL_USER_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: MYSQL_USER_NAME
+            - name: MYSQL_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cscs-secret
+                  key: MYSQL_DB_PASSWORD
+            - name: MYSQL_DATABASE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AUTH_SERVER_DATABASE_NAME
+            - name: APPLICATION_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AUTH_SERVER_CONTEXT_PATH
+            - name: AUTH_VERIFY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AUTH_VERIFY_URL
+            - name: AUTH_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AUTH_BASE_URL
+            - name: NOTIFICATION_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: NOTIFICATION_URL
+            - name: CMS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: CMS_URL
+            - name: DRIVER_PAY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: DRIVER_PAY_URL
+            - name: GOOGLE_OAUTH_REDIRECT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: GOOGLE_OAUTH_REDIRECT_URL
+            - name: GOOGLE_OAUTH_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cscs-secret
+                  key: GOOGLE_OAUTH_SECRET_KEY
+            - name: GOOGLE_OAUTH_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: GOOGLE_OAUTH_CLIENT_ID
+            - name: AUTH_JWT_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AUTH_JWT_SECRET
+            - name: MYSQL_DB_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: MYSQL_DB_IP
+            - name: DOMAIN_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: DOMAIN_NAME
+            - name: LOAD_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: LOAD_BASE_URL
+            - name: AUTH_TWOFA_EXP_TIME
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AUTH_TWOFA_EXP_TIME
+            - name: SISENSE_SECRET_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SISENSE_SECRET_KEY
+            - name: SISENSE_SSO_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SISENSE_SSO_ENABLED
+            - name: SISENSE_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SISENSE_BASE_URL
+            - name: SISENSE_SSO_EXPIRATION_MINUTES
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SISENSE_SSO_EXPIRATION_MINUTES
+            - name: AUTH_JWT_EXPIRATION_DURATION_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AUTH_JWT_EXPIRATION_DURATION_MS
+            - name: JDBC_URL
+              value: "jdbc:mysql://${MYSQL_DB_IP}:3306/${MYSQL_DATABASE_NAME}?createDatabaseIfNotExist=true"
+          livenessProbe:
+            httpGet:
+              path: /auth/actuator/health
+              port: 7000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /auth/actuator/health
+              port: 7000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 60"]
+      terminationGracePeriodSeconds: 60
+{{- end }}
+---
+{{- if .Values.deploy.notification_api }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.environment }}-notification-api
+  namespace: {{ .Values.namespace }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-api
+  template:
+    metadata:
+      labels:
+        app: notification-api
+    spec:
+      imagePullSecrets:
+        - name: artifact-registry-access
+      containers:
+        - name: notification-api
+          image: {{ .Values.notification_api.docker_image }}
+          imagePullPolicy: Always
+          env:
+            - name: SPRING_PROFILE
+              value: {{ .Values.spring_profile }}
+            - name: LOG4J_FORMAT_MSG_NO_LOOKUPS
+              value: "{{ .Values.log4j_format_lookup }}"
+            - name: MYSQL_USER_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: MYSQL_USER_NAME
+            - name: MYSQL_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cscs-secret
+                  key: MYSQL_DB_PASSWORD
+            - name: MYSQL_DATABASE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: NOTIFICATION_DATABASE_NAME
+            - name: SEND_GRID_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SEND_GRID_USERNAME
+            - name: SEND_GRID_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cscs-secret
+                  key: SEND_GRID_PASSWORD
+            - name: AUTH_VERIFY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AUTH_VERIFY_URL
+            - name: AUTH_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AUTH_BASE_URL
+            - name: NOTIFICATION_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: NOTIFICATION_URL
+            - name: RATE_LIMIT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: RATE_LIMIT_URL
+            - name: APPLICATION_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: NOTIFICATION_API_CONTEXT_PATH
+            - name: AUTH_JWT_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AUTH_JWT_SECRET
+            - name: MYSQL_DB_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: MYSQL_DB_IP
+            - name: CAM_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: CAM_API_URL
+            {{- if .Values.brevo_api_key }}
+            - name: BREVO_API_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: BREVO_API_KEY
+            - name: BREVO_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: BREVO_API_URL
+            - name: TWILIO_ACCOUNTSID
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: TWILIO_ACCOUNTSID
+            - name: TWILIO_AUTHTOKEN
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: TWILIO_AUTHTOKEN
+            - name: TWILIO_FROMNUMBER
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: TWILIO_FROMNUMBER
+            - name: BREVO_FROM_MAIL_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: BREVO_FROM_MAIL_ID
+            {{- end }}
+            - name: JDBC_URL
+              value: "jdbc:mysql://${MYSQL_DB_IP}:3306/${MYSQL_DATABASE_NAME}?createDatabaseIfNotExist=true"
+            {{- if .Values.kafka_bootstrapserver_url }}
+            - name: KAFKA_BOOTSTRAPSERVER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: KAFKA_BOOTSTRAPSERVER_URL
+            {{- end }}
+            {{- if .Values.kafka_bootstrapserver_protocol }}
+            - name: KAFKA_BOOTSTRAPSERVER_PROTOCOL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: KAFKA_BOOTSTRAPSERVER_PROTOCOL
+            {{- end }}
+            {{- if .Values.kafka_bootstrapserver_sasl_mechanism }}
+            - name: KAFKA_BOOTSTRAPSERVER_SASL_MECHANISM
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: KAFKA_BOOTSTRAPSERVER_SASL_MECHANISM
+            {{- end }}
+            {{- if .Values.kafka_bootstrapserver_username }}
+            - name: KAFKA_BOOTSTRAPSERVER_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: KAFKA_BOOTSTRAPSERVER_USERNAME
+            {{- end }}
+            {{- if .Values.kafka_bootstrapserver_password }}
+            - name: KAFKA_BOOTSTRAPSERVER_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: KAFKA_BOOTSTRAPSERVER_PASSWORD
+            {{- end }}
+            {{- if .Values.notification_spring_kafka_consumer_group_id }}
+            - name: SPRING_KAFKA_CONSUMER_GROUP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: NOTIFICATION_SPRING_KAFKA_CONSUMER_GROUP_ID
+            {{- end }}
+            {{- if .Values.spring_kafka_consumer_topic_notification }}
+            - name: SPRING_KAFKA_CONSUMER_TOPIC_NOTIFICATION
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SPRING_KAFKA_CONSUMER_TOPIC_NOTIFICATION
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /na/actuator/health
+              port: 7600
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /na/actuator/health
+              port: 7600
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 60"]
+      terminationGracePeriodSeconds: 60
+{{- end }}
+---
+{{- if .Values.deploy.asset_management_api }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.environment }}-asset-management-api
+  namespace: {{ .Values.namespace }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: asset-management-api
+  template:
+    metadata:
+      labels:
+        app: asset-management-api
+    spec:
+      imagePullSecrets:
+        - name: artifact-registry-access
+      containers:
+        - name: asset-management-api
+          image: {{ .Values.asset_management_api.docker_image }}
+          imagePullPolicy: Always
+          env:
+            - name: SPRING_PROFILE
+              value: {{ .Values.spring_profile }}
+            - name: LOG4J_FORMAT_MSG_NO_LOOKUPS
+              value: "{{ .Values.log4j_format_lookup }}"
+            - name: MYSQL_USER_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: MYSQL_USER_NAME
+            - name: MYSQL_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cscs-secret
+                  key: MYSQL_DB_PASSWORD
+            - name: MYSQL_DATABASE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: ASSET_MANAGEMENT_DATABASE_NAME
+            - name: APPLICATION_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: ASSET_MANAGEMENT_CONTEXT_PATH
+            - name: AUTH_VERIFY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AUTH_VERIFY_URL
+            - name: AUTH_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AUTH_BASE_URL
+            - name: MASTER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: MASTER_URL
+            - name: ASSET_ALERT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: ASSET_ALERT_URL
+            - name: ASSET_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: ASSET_URL
+            - name: NOTIFICATION_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: NOTIFICATION_URL
+            - name: CMS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: CMS_URL
+            - name: DRIVER_PAY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: DRIVER_PAY_URL
+            - name: VT_SERVER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: VT_SERVER_URL
+            - name: AUTH_JWT_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AUTH_JWT_SECRET
+            - name: MYSQL_DB_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: MYSQL_DB_IP
+            {{- if .Values.kafka_bootstrapserver_url }}
+            - name: KAFKA_BOOTSTRAPSERVER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: KAFKA_BOOTSTRAPSERVER_URL
+            {{- end }}
+            {{- if .Values.kafka_bootstrapserver_username }}
+            - name: KAFKA_BOOTSTRAPSERVER_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: KAFKA_BOOTSTRAPSERVER_USERNAME
+            {{- end }}
+            {{- if .Values.kafka_bootstrapserver_password }}
+            - name: KAFKA_BOOTSTRAPSERVER_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: KAFKA_BOOTSTRAPSERVER_PASSWORD
+            {{- end }}
+            {{- if .Values.kafka_bootstrapserver_protocol }}
+            - name: KAFKA_BOOTSTRAPSERVER_PROTOCOL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: KAFKA_BOOTSTRAPSERVER_PROTOCOL
+            {{- end }}
+            {{- if .Values.kafka_bootstrapserver_sasl_mechanism }}
+            - name: KAFKA_BOOTSTRAPSERVER_SASL_MECHANISM
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: KAFKA_BOOTSTRAPSERVER_SASL_MECHANISM
+            {{- end }}
+            {{- if .Values.spring_kafka_consumer_group_id }}
+            - name: SPRING_KAFKA_CONSUMER_GROUP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SPRING_KAFKA_CONSUMER_GROUP_ID
+            {{- end }}
+            {{- if .Values.spring_kafka_consumer_topic_asset_tracking }}
+            - name: SPRING_KAFKA_CONSUMER_TOPIC_ASSET_TRACKING
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SPRING_KAFKA_CONSUMER_TOPIC_ASSET_TRACKING
+            {{- end }}
+            {{- if .Values.kafka_consumer_group }}
+            - name: KAFKA_CONSUMER_GROUP
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: KAFKA_CONSUMER_GROUP
+            - name: KAFKA_TOPIC_DEVICE_TRACKING
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: KAFKA_TOPIC_DEVICE_TRACKING
+            {{- end }}
+            {{- if .Values.usps_url }}
+            - name: USPS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: USPS_URL
+            {{- end }}
+            {{- if .Values.usps_api_key }}
+            - name: USPS_API_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: USPS_API_KEY
+            {{- end }}
+            {{- if .Values.usps_cron_expression }}
+            - name: USPS_CRON_EXPRESSION
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: USPS_CRON_EXPRESSION
+            - name: SCHEDULER_AUTH_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SCHEDULER_AUTH_USERNAME
+            - name: SCHEDULER_AUTH_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SCHEDULER_AUTH_PASSWORD
+            {{- end }}
+            {{- if .Values.tive_corn_expression }}
+            - name: TIVE_CORN_EXPRESSION
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: TIVE_CORN_EXPRESSION
+            - name: TIVE_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: TIVE_API_URL
+            - name: TIVE_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: TIVE_CLIENT_ID
+            - name: TIVE_CLIENT_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: TIVE_CLIENT_SECRET
+            - name: TIVE_ACCOUNT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: TIVE_ACCOUNT_ID
+            - name: MQTT_BROKER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: MQTT_BROKER_URL
+            - name: MQTT_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: MQTT_CLIENT_ID
+            - name: MQTT_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: MQTT_USERNAME
+            - name: MQTT_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: MQTT_PASSWORD
+            - name: SHIPMENT_PLANNING_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SHIPMENT_PLANNING_URL
+            {{- end }}
+            {{- if .Values.spring_kafka_consumer_topic_notification }}
+            - name: SPRING_KAFKA_PRODUCER_TOPIC_NOTIFICATION
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SPRING_KAFKA_PRODUCER_TOPIC_NOTIFICATION
+            {{- end }}
+            - name: SLOC_CRON_EXPRESSION
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SLOC_CRON_EXPRESSION
+            - name: SLOC_API_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: SLOC_API_KEY
+            - name: MQTT_MINEW_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: MQTT_MINEW_ENABLED
+            - name: MQTT_SURFACT_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: MQTT_SURFACT_ENABLED
+            - name: NOTIFICATION_TIME_ZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: NOTIFICATION_TIME_ZONE
+            - name: JDBC_URL
+              value: "jdbc:mysql://${MYSQL_DB_IP}:3306/${MYSQL_DATABASE_NAME}?createDatabaseIfNotExist=true"
+            - name: DEVOPS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: DEVOPS_HOST
+          livenessProbe:
+            httpGet:
+              path: /cam/actuator/health
+              port: 7300
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /cam/actuator/health
+              port: 7300
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 60"]
+      terminationGracePeriodSeconds: 60
+{{- end }}

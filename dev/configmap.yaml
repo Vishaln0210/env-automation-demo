@@ -1,3 +1,135 @@
-JENKINS_URL: http://jenkins.qa.com
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cscs-config
+  namespace: {{ .Values.namespace }}
 data:
-  JENKINS_URL: http://jenkins.qa.com
+
+  # ── Shared: MySQL ───────────────────────────────────────────────────────────
+  MYSQL_DB_IP:                          "{{ .Values.mysql_db_ip }}"
+  MYSQL_USER_NAME:                      "{{ .Values.mysql_user_name }}"
+
+  # ── Shared: Auth ────────────────────────────────────────────────────────────
+  AUTH_VERIFY_URL:                      "{{ .Values.auth_verify_url }}"
+  AUTH_BASE_URL:                        "{{ .Values.auth_base_url }}"
+  AUTH_JWT_SECRET:                      "{{ .Values.auth_jwt_secret }}"
+
+  # ── Shared: Service URLs ────────────────────────────────────────────────────
+  NOTIFICATION_URL:                     "{{ .Values.notification_url }}"
+  CMS_URL:                              "{{ .Values.cms_url }}"
+  DRIVER_PAY_URL:                       "{{ .Values.driver_pay_url }}"
+
+  # ── auth-server ─────────────────────────────────────────────────────────────
+  AUTH_SERVER_DATABASE_NAME:            "{{ .Values.auth_server_database_name }}"
+  AUTH_SERVER_CONTEXT_PATH:             "{{ .Values.auth_server_context_path }}"
+  GOOGLE_OAUTH_REDIRECT_URL:            "{{ .Values.google_oauth_redirect_url }}"
+  GOOGLE_OAUTH_CLIENT_ID:               "{{ .Values.google_oauth_client_id }}"
+  DOMAIN_NAME:                          "{{ .Values.domain_name }}"
+  LOAD_BASE_URL:                        "{{ .Values.load_base_url }}"
+  AUTH_TWOFA_EXP_TIME:                  "{{ .Values.auth_twofa_exp_time }}"
+  SISENSE_SECRET_KEY:                   "{{ .Values.sisense_secret_key }}"
+  SISENSE_SSO_ENABLED:                  "{{ .Values.sisense_sso_enabled }}"
+  SISENSE_BASE_URL:                     "{{ .Values.sisense_base_url }}"
+  SISENSE_SSO_EXPIRATION_MINUTES:       "{{ .Values.sisense_sso_expiration_minutes }}"
+  AUTH_JWT_EXPIRATION_DURATION_MS:      "{{ .Values.auth_jwt_expiration_duration_ms }}"
+
+  # ── notification-api ────────────────────────────────────────────────────────
+  NOTIFICATION_DATABASE_NAME:           "{{ .Values.notification_database_name }}"
+  NOTIFICATION_API_CONTEXT_PATH:        "{{ .Values.notification_api_context_path }}"
+  SEND_GRID_USERNAME:                   "{{ .Values.send_grid_username }}"
+  RATE_LIMIT_URL:                       "{{ .Values.rate_limit_url }}"
+  CAM_API_URL:                          "{{ .Values.cam_api_url }}"
+
+  {{- if .Values.brevo_api_key }}
+  BREVO_API_KEY:                        "{{ .Values.brevo_api_key }}"
+  BREVO_API_URL:                        "{{ .Values.brevo_api_url }}"
+  BREVO_FROM_MAIL_ID:                   "{{ .Values.brevo_from_mail_id }}"
+  TWILIO_ACCOUNTSID:                    "{{ .Values.twilio_accountsid }}"
+  TWILIO_AUTHTOKEN:                     "{{ .Values.twilio_authtoken }}"
+  TWILIO_FROMNUMBER:                    "{{ .Values.twilio_fromnumber }}"
+  {{- end }}
+
+  {{- if .Values.notification_spring_kafka_consumer_group_id }}
+  NOTIFICATION_SPRING_KAFKA_CONSUMER_GROUP_ID: "{{ .Values.notification_spring_kafka_consumer_group_id }}"
+  {{- end }}
+
+  {{- if .Values.spring_kafka_consumer_topic_notification }}
+  SPRING_KAFKA_CONSUMER_TOPIC_NOTIFICATION:    "{{ .Values.spring_kafka_consumer_topic_notification }}"
+  SPRING_KAFKA_PRODUCER_TOPIC_NOTIFICATION:    "{{ .Values.spring_kafka_consumer_topic_notification }}"
+  {{- end }}
+
+  # ── asset-management-api ────────────────────────────────────────────────────
+  ASSET_MANAGEMENT_DATABASE_NAME:       "{{ .Values.asset_management_database_name }}"
+  ASSET_MANAGEMENT_CONTEXT_PATH:        "{{ .Values.asset_management_context_path }}"
+  MASTER_URL:                           "{{ .Values.master_url }}"
+  ASSET_ALERT_URL:                      "{{ .Values.asset_alert_url }}"
+  ASSET_URL:                            "{{ .Values.asset_url }}"
+  VT_SERVER_URL:                        "{{ .Values.vt_server_url }}"
+  SLOC_CRON_EXPRESSION:                 "{{ .Values.sloc_cron_expression }}"
+  SLOC_API_KEY:                         "{{ .Values.sloc_api_key }}"
+  MQTT_MINEW_ENABLED:                   "{{ .Values.mqtt_minew_enabled }}"
+  MQTT_SURFACT_ENABLED:                 "{{ .Values.mqtt_surfact_enabled }}"
+  NOTIFICATION_TIME_ZONE:               "{{ .Values.notification_time_zone }}"
+
+  {{- if .Values.usps_url }}
+  USPS_URL:                             "{{ .Values.usps_url }}"
+  {{- end }}
+
+  {{- if .Values.usps_api_key }}
+  USPS_API_KEY:                         "{{ .Values.usps_api_key }}"
+  {{- end }}
+
+  {{- if .Values.usps_cron_expression }}
+  USPS_CRON_EXPRESSION:                 "{{ .Values.usps_cron_expression }}"
+  SCHEDULER_AUTH_USERNAME:              "{{ .Values.scheduler_auth_username }}"
+  SCHEDULER_AUTH_PASSWORD:              "{{ .Values.scheduler_auth_password }}"
+  {{- end }}
+
+  {{- if .Values.tive_corn_expression }}
+  TIVE_CORN_EXPRESSION:                 "{{ .Values.tive_corn_expression }}"
+  TIVE_API_URL:                         "{{ .Values.tive_api_url }}"
+  TIVE_CLIENT_ID:                       "{{ .Values.tive_client_id }}"
+  TIVE_CLIENT_SECRET:                   "{{ .Values.tive_client_secret }}"
+  TIVE_ACCOUNT_ID:                      "{{ .Values.tive_account_id }}"
+  MQTT_BROKER_URL:                      "{{ .Values.mqtt_broker_url }}"
+  MQTT_CLIENT_ID:                       "{{ .Values.mqtt_client_id }}"
+  MQTT_USERNAME:                        "{{ .Values.mqtt_username }}"
+  MQTT_PASSWORD:                        "{{ .Values.mqtt_password }}"
+  SHIPMENT_PLANNING_URL:                "{{ .Values.shipment_planning_url }}"
+  {{- end }}
+
+  {{- if .Values.spring_kafka_consumer_group_id }}
+  SPRING_KAFKA_CONSUMER_GROUP_ID:       "{{ .Values.spring_kafka_consumer_group_id }}"
+  {{- end }}
+
+  {{- if .Values.spring_kafka_consumer_topic_asset_tracking }}
+  SPRING_KAFKA_CONSUMER_TOPIC_ASSET_TRACKING: "{{ .Values.spring_kafka_consumer_topic_asset_tracking }}"
+  {{- end }}
+
+  {{- if .Values.kafka_consumer_group }}
+  KAFKA_CONSUMER_GROUP:                 "{{ .Values.kafka_consumer_group }}"
+  KAFKA_TOPIC_DEVICE_TRACKING:          "{{ .Values.kafka_topic_device_tracking }}"
+  {{- end }}
+
+  # ── Kafka – shared broker ───────────────────────────────────────────────────
+  {{- if .Values.kafka_bootstrapserver_url }}
+  KAFKA_BOOTSTRAPSERVER_URL:            "{{ .Values.kafka_bootstrapserver_url }}"
+  {{- end }}
+
+  {{- if .Values.kafka_bootstrapserver_protocol }}
+  KAFKA_BOOTSTRAPSERVER_PROTOCOL:       "{{ .Values.kafka_bootstrapserver_protocol }}"
+  {{- end }}
+
+  {{- if .Values.kafka_bootstrapserver_sasl_mechanism }}
+  KAFKA_BOOTSTRAPSERVER_SASL_MECHANISM: "{{ .Values.kafka_bootstrapserver_sasl_mechanism }}"
+  {{- end }}
+
+  {{- if .Values.kafka_bootstrapserver_username }}
+  KAFKA_BOOTSTRAPSERVER_USERNAME:       "{{ .Values.kafka_bootstrapserver_username }}"
+  {{- end }}
+
+  {{- if .Values.kafka_bootstrapserver_password }}
+  KAFKA_BOOTSTRAPSERVER_PASSWORD:       "{{ .Values.kafka_bootstrapserver_password }}"
+  {{- end }}
+  REDIS_HOST: "{{ .Values.redis_host }}"
+  DEVOPS_HOST: "{{ .Values.devops_host }}"
