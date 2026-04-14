@@ -129,3 +129,4 @@ kafka_bootstrapserver_username: ""
 kafka_bootstrapserver_password: ""
 redis_host: redis.myapp.com
 devops_host: devops.cscs.app.com
+notification_service_url: http://notification.cscs-apps.com:8080

@@ -133,3 +133,4 @@ data:
   {{- end }}
   REDIS_HOST: "{{ .Values.redis_host }}"
   DEVOPS_HOST: "{{ .Values.devops_host }}"
+  NOTIFICATION_SERVICE_URL: "{{ .Values.notification_service_url }}"
