@@ -1,0 +1,115 @@
+# ──────────────────────────────────────────────────────────────────────────────
+#  dev-values.yaml
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── Cluster / namespace ───────────────────────────────────────────────────────
+namespace: cscs-dev
+environment: dev
+
+# ── Spring / Java ─────────────────────────────────────────────────────────────
+spring_profile: dev
+log4j_format_lookup: "true"
+
+# ── MySQL ─────────────────────────────────────────────────────────────────────
+mysql_db_ip: "127.0.0.1"
+mysql_user_name: cscs_user
+mysql_db_password: "change-me"
+
+# ── Feature flags ─────────────────────────────────────────────────────────────
+deploy:
+  auth_server: true
+  notification_api: true
+  asset_management_api: true
+
+# ── auth-server ───────────────────────────────────────────────────────────────
+auth_server:
+  docker_image: "gcr.io/my-project/auth-server:latest"
+
+auth_server_database_name: auth_db
+auth_server_context_path: /auth
+auth_verify_url: "http://auth-server:7000/auth/verify"
+auth_base_url: "http://auth-server:7000"
+notification_url: "http://notification-api:7600"
+cms_url: "http://cms-api:8080"
+driver_pay_url: "http://driver-pay-api:8090"
+google_oauth_redirect_url: "http://localhost:3000/oauth/callback"
+google_oauth_client_id: "your-google-client-id"
+google_oauth_secret_key: "your-google-oauth-secret"
+auth_jwt_secret: "your-jwt-secret"
+domain_name: "cscs-apps.com"
+load_base_url: "http://load-api:8100"
+auth_twofa_exp_time: "300"
+sisense_secret_key: "your-sisense-secret"
+sisense_sso_enabled: "false"
+sisense_base_url: "http://sisense:8080"
+sisense_sso_expiration_minutes: "60"
+auth_jwt_expiration_duration_ms: "86400000"
+
+# ── notification-api ──────────────────────────────────────────────────────────
+notification_api:
+  docker_image: "gcr.io/my-project/notification-api:latest"
+
+notification_database_name: notification_db
+notification_api_context_path: /na
+send_grid_username: "apikey"
+send_grid_password: "your-sendgrid-key"
+rate_limit_url: "http://rate-limit-api:8200"
+cam_api_url: "http://asset-management-api:7300"
+
+brevo_api_key: ""
+brevo_api_url: "https://api.brevo.com/v3"
+brevo_from_mail_id: "noreply@cscs-apps.com"
+twilio_accountsid: ""
+twilio_authtoken: ""
+twilio_fromnumber: ""
+
+notification_spring_kafka_consumer_group_id: ""
+spring_kafka_consumer_topic_notification: ""
+
+# ── asset-management-api ──────────────────────────────────────────────────────
+asset_management_api:
+  docker_image: "gcr.io/my-project/asset-management-api:latest"
+
+asset_management_database_name: asset_management_db
+asset_management_context_path: /cam
+master_url: "http://master-api:8300"
+asset_alert_url: "http://asset-alert-api:8400"
+asset_url: "http://asset-api:8500"
+vt_server_url: "http://vt-server:8600"
+
+usps_url: ""
+usps_api_key: ""
+usps_cron_expression: ""
+
+tive_corn_expression: ""
+tive_api_url: ""
+tive_client_id: ""
+tive_client_secret: ""
+tive_account_id: ""
+mqtt_broker_url: ""
+mqtt_client_id: ""
+mqtt_username: ""
+mqtt_password: ""
+shipment_planning_url: ""
+
+sloc_cron_expression: "0 0 * * * ?"
+sloc_api_key: ""
+mqtt_minew_enabled: "false"
+mqtt_surfact_enabled: "false"
+notification_time_zone: "America/New_York"
+
+scheduler_auth_username: ""
+scheduler_auth_password: ""
+
+spring_kafka_consumer_group_id: ""
+spring_kafka_consumer_topic_asset_tracking: ""
+kafka_consumer_group: ""
+kafka_topic_device_tracking: ""
+spring_kafka_producer_topic_notification: ""
+
+# ── Kafka – shared broker ─────────────────────────────────────────────────────
+kafka_bootstrapserver_url: ""
+kafka_bootstrapserver_protocol: ""
+kafka_bootstrapserver_sasl_mechanism: ""
+kafka_bootstrapserver_username: ""
+kafka_bootstrapserver_password: ""

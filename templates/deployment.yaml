@@ -144,11 +144,6 @@ spec:
                   key: AUTH_JWT_EXPIRATION_DURATION_MS
             - name: JDBC_URL
               value: "jdbc:mysql://${MYSQL_DB_IP}:3306/${MYSQL_DATABASE_NAME}?createDatabaseIfNotExist=true"
-            - name: NOTIFICATION_SERVICE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: cscs-config
-                  key: NOTIFICATION_SERVICE_URL
           livenessProbe:
             httpGet:
               path: /auth/actuator/health
@@ -646,11 +641,6 @@ spec:
                   key: NOTIFICATION_TIME_ZONE
             - name: JDBC_URL
               value: "jdbc:mysql://${MYSQL_DB_IP}:3306/${MYSQL_DATABASE_NAME}?createDatabaseIfNotExist=true"
-            - name: DEVOPS_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: cscs-config
-                  key: DEVOPS_HOST
           livenessProbe:
             httpGet:
               path: /cam/actuator/health

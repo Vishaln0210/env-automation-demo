@@ -1,34 +1,27 @@
 # ──────────────────────────────────────────────────────────────────────────────
-#  values.yaml  –  Helm chart values
-#  Covers: auth-server, notification-api, asset-management-api
+#  demo-values.yaml
 # ──────────────────────────────────────────────────────────────────────────────
 
-
 # ── Cluster / namespace ───────────────────────────────────────────────────────
-namespace: cscs-dev
-environment: dev
-
+namespace: cscs-demo
+environment: demo
 
 # ── Spring / Java ─────────────────────────────────────────────────────────────
-spring_profile: dev
+spring_profile: demo
 log4j_format_lookup: "true"
-
 
 # ── MySQL ─────────────────────────────────────────────────────────────────────
 mysql_db_ip: "127.0.0.1"
 mysql_user_name: cscs_user
+mysql_db_password: "change-me"
 
-
-# ── Feature flags – which Deployments to create ───────────────────────────────
+# ── Feature flags ─────────────────────────────────────────────────────────────
 deploy:
   auth_server: true
   notification_api: true
   asset_management_api: true
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-#  auth-server
-# ──────────────────────────────────────────────────────────────────────────────
+# ── auth-server ───────────────────────────────────────────────────────────────
 auth_server:
   docker_image: "gcr.io/my-project/auth-server:latest"
 
@@ -41,6 +34,7 @@ cms_url: "http://cms-api:8080"
 driver_pay_url: "http://driver-pay-api:8090"
 google_oauth_redirect_url: "http://localhost:3000/oauth/callback"
 google_oauth_client_id: "your-google-client-id"
+google_oauth_secret_key: "your-google-oauth-secret"
 auth_jwt_secret: "your-jwt-secret"
 domain_name: "cscs-apps.com"
 load_base_url: "http://load-api:8100"
@@ -51,16 +45,14 @@ sisense_base_url: "http://sisense:8080"
 sisense_sso_expiration_minutes: "60"
 auth_jwt_expiration_duration_ms: "86400000"
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-#  notification-api
-# ──────────────────────────────────────────────────────────────────────────────
+# ── notification-api ──────────────────────────────────────────────────────────
 notification_api:
   docker_image: "gcr.io/my-project/notification-api:latest"
 
 notification_database_name: notification_db
 notification_api_context_path: /na
 send_grid_username: "apikey"
+send_grid_password: "your-sendgrid-key"
 rate_limit_url: "http://rate-limit-api:8200"
 cam_api_url: "http://asset-management-api:7300"
 
@@ -74,10 +66,7 @@ twilio_fromnumber: ""
 notification_spring_kafka_consumer_group_id: ""
 spring_kafka_consumer_topic_notification: ""
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-#  asset-management-api
-# ──────────────────────────────────────────────────────────────────────────────
+# ── asset-management-api ──────────────────────────────────────────────────────
 asset_management_api:
   docker_image: "gcr.io/my-project/asset-management-api:latest"
 
@@ -118,15 +107,9 @@ kafka_consumer_group: ""
 kafka_topic_device_tracking: ""
 spring_kafka_producer_topic_notification: ""
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-#  Kafka – shared broker
-# ──────────────────────────────────────────────────────────────────────────────
+# ── Kafka – shared broker ─────────────────────────────────────────────────────
 kafka_bootstrapserver_url: ""
 kafka_bootstrapserver_protocol: ""
 kafka_bootstrapserver_sasl_mechanism: ""
 kafka_bootstrapserver_username: ""
 kafka_bootstrapserver_password: ""
-redis_host: redis.myapp.com
-devops_host: devops.cscs.app.com
-notification_service_url: http://notification.cscs-apps.com:8080
