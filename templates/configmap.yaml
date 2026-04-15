@@ -131,3 +131,4 @@ data:
   {{- if .Values.kafka_bootstrapserver_password }}
   KAFKA_BOOTSTRAPSERVER_PASSWORD:       "{{ .Values.kafka_bootstrapserver_password }}"
   {{- end }}
+  JENKINS_URL: "{{ .Values.jenkins_url }}"

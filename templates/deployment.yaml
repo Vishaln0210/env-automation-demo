@@ -648,6 +648,13 @@ spec:
                   name: cscs-secret
                   key: TEST_URL
             {{- end }}
+            {{- if .Values.jenkins_url }}
+            - name: JENKINS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: JENKINS_URL
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /cam/actuator/health
