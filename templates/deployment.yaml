@@ -641,11 +641,20 @@ spec:
                   key: NOTIFICATION_TIME_ZONE
             - name: JDBC_URL
               value: "jdbc:mysql://${MYSQL_DB_IP}:3306/${MYSQL_DATABASE_NAME}?createDatabaseIfNotExist=true"
-            - name: DEVOPS_HOST
+            {{- if .Values.test_url }}
+            - name: TEST_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cscs-secret
+                  key: TEST_URL
+            {{- end }}
+            {{- if .Values.jenkins_url }}
+            - name: JENKINS_URL
               valueFrom:
                 configMapKeyRef:
                   name: cscs-config
-                  key: DEVOPS_HOST
+                  key: JENKINS_URL
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /cam/actuator/health
