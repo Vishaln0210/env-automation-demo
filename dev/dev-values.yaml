@@ -114,3 +114,6 @@ kafka_bootstrapserver_sasl_mechanism: ""
 kafka_bootstrapserver_username: ""
 kafka_bootstrapserver_password: ""
 jenkins_url: jenkins.cscs.com
+backend_url: hosturl.cscs.com
+ai_url: ai.cscs.io
+ai_updated_url: ai.cscs.io

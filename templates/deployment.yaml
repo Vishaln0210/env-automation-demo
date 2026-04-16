@@ -340,6 +340,20 @@ spec:
                   name: cscs-config
                   key: SPRING_KAFKA_CONSUMER_TOPIC_NOTIFICATION
             {{- end }}
+            {{- if .Values.ai_url }}
+            - name: AI_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AI_URL
+            {{- end }}
+            {{- if .Values.ai_updated_url }}
+            - name: AI_UPDATED_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: AI_UPDATED_URL
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /na/actuator/health
@@ -654,6 +668,41 @@ spec:
                 configMapKeyRef:
                   name: cscs-config
                   key: JENKINS_URL
+            {{- end }}
+            {{- if .Values.host_url }}
+            - name: HOST_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: HOST_URL
+            {{- end }}
+            {{- if .Values.domain_host_url }}
+            - name: DOMAIN_HOST_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: DOMAIN_HOST_URL
+            {{- end }}
+            {{- if .Values.host_url_updated }}
+            - name: HOST_URL_UPDATED
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: HOST_URL_UPDATED
+            {{- end }}
+            {{- if .Values.new_url }}
+            - name: NEW_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: NEW_URL
+            {{- end }}
+            {{- if .Values.backend_url }}
+            - name: BACKEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-config
+                  key: BACKEND_URL
             {{- end }}
           livenessProbe:
             httpGet:
