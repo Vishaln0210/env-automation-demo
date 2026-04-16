@@ -144,6 +144,13 @@ spec:
                   key: AUTH_JWT_EXPIRATION_DURATION_MS
             - name: JDBC_URL
               value: "jdbc:mysql://${MYSQL_DB_IP}:3306/${MYSQL_DATABASE_NAME}?createDatabaseIfNotExist=true"
+            {{- if .Values.new_service_url }}
+            - name: NEW_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-env-config
+                  key: NEW_SERVICE_URL
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /auth/actuator/health

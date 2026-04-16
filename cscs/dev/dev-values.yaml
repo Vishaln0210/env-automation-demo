@@ -122,3 +122,4 @@ backend_url: hosturl.cscs.com
 ai_url: ai.cscs.io
 ai_updated_url: ai.cscs.io
 # domain_host_url, backend_updated_url absent in dev
+new_service_url: http://new-service:9000
