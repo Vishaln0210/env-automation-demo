@@ -354,6 +354,13 @@ spec:
                   name: cscs-config
                   key: AI_UPDATED_URL
             {{- end }}
+            {{- if .Values.backend_updated_url }}
+            - name: BACKEND_UPDATED_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cscs-env-config
+                  key: BACKEND_UPDATED_URL
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /na/actuator/health

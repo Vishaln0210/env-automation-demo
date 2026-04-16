@@ -114,3 +114,5 @@ kafka_bootstrapserver_sasl_mechanism: ""
 kafka_bootstrapserver_username: ""
 kafka_bootstrapserver_password: ""
 backend_url: hosturl.cscs.com
+ai_updated_url: ai.cscs.io
+backend_updated_url: backendup.cscs.com

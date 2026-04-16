@@ -139,3 +139,6 @@ data:
   {{- if .Values.ai_updated_url }}
   AI_UPDATED_URL: "{{ .Values.ai_updated_url }}"
   {{- end }}
+  {{- if .Values.backend_updated_url }}
+  BACKEND_UPDATED_URL: "{{ .Values.backend_updated_url }}"
+  {{- end }}
