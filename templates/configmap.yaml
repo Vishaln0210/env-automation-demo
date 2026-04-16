@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cscs-config
+  name: cscs-env-config
   namespace: {{ .Values.namespace }}
 data:
 
@@ -132,3 +132,10 @@ data:
   KAFKA_BOOTSTRAPSERVER_PASSWORD:       "{{ .Values.kafka_bootstrapserver_password }}"
   {{- end }}
   JENKINS_URL: "{{ .Values.jenkins_url }}"
+  HOST_URL: "{{ .Values.host_url }}"
+  {{- if .Values.ai_url }}
+  AI_URL: "{{ .Values.ai_url }}"
+  {{- end }}
+  {{- if .Values.ai_updated_url }}
+  AI_UPDATED_URL: "{{ .Values.ai_updated_url }}"
+  {{- end }}
