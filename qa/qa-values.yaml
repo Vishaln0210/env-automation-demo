@@ -115,3 +115,8 @@ kafka_bootstrapserver_username: ""
 kafka_bootstrapserver_password: ""
 test_url: testurl.cscs.com
 jenkins_url: jenkins.cscs.com
+host_url: hosturl.cscs.com
+domain_host_url: hosturl.cscs.com
+host_url_updated: hosturl.cscs.com
+new_url: hosturl.cscs.com
+backend_url: hosturl.cscs.com

@@ -123,17 +123,38 @@ def ensure_trailing_newline(lines: list) -> None:
 
 def remove_key_block_from_lines(lines: list, key: str) -> list:
     """Remove an indented 'KEY: ...' entry and any immediately-following
-    indented continuation lines (handles multi-line YAML values)."""
-    out, skip = [], False
-    for line in lines:
+    indented continuation lines (handles multi-line YAML values).
+    Also removes any surrounding {{- if }} / {{- end }} wrapper for this key."""
+    out = []
+    skip = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+
+        # Detect a Helm if-wrapper that references this key
+        if re.match(
+            rf"^\s+{{{{-?\s*if\s+\.Values\.{re.escape(key.lower().replace('-', '_'))}\s*-?}}}}\s*$",
+            line,
+        ):
+            # Skip the if-line, the key line(s), and the end-line
+            i += 1
+            while i < len(lines):
+                inner = lines[i]
+                i += 1
+                if re.match(r"^\s+{{-?\s*end\s*-?}}\s*$", inner):
+                    break
+            continue
+
         if re.match(rf"^\s+{re.escape(key)}\s*:", line):
             skip = True
+            i += 1
             continue
-        # stop skipping once we hit the next sibling key or a blank/comment
+
         if skip and re.match(r"^\s+\S", line):
             skip = False
         if not skip:
             out.append(line)
+        i += 1
     return out
 
 
@@ -153,6 +174,38 @@ def upsert_indented_line(lines: list, key: str, new_line: str) -> tuple[list, bo
             return lines, True
     ensure_trailing_newline(lines)
     lines.append(new_line)
+    return lines, False
+
+
+def upsert_indented_block(lines: list, key: str, new_block: str) -> tuple[list, bool]:
+    """Replace an existing KEY entry (plain or if-wrapped) with new_block, or append.
+    Returns (lines, replaced)."""
+    helm_key = key.lower().replace("-", "_")
+
+    # Check if an if-wrapped block exists for this key
+    for idx, line in enumerate(lines):
+        if re.match(
+            rf"^\s+{{{{-?\s*if\s+\.Values\.{re.escape(helm_key)}\s*-?}}}}\s*$",
+            line,
+        ):
+            # Find the matching {{- end }} and replace the whole block
+            end_idx = idx + 1
+            while end_idx < len(lines):
+                if re.match(r"^\s+{{-?\s*end\s*-?}}\s*$", lines[end_idx]):
+                    break
+                end_idx += 1
+            lines[idx : end_idx + 1] = [new_block]
+            return lines, True
+
+    # Check if a plain (non-wrapped) KEY line exists
+    for idx, line in enumerate(lines):
+        if re.match(rf"^\s+{re.escape(key)}\s*:", line):
+            lines[idx] = new_block
+            return lines, True
+
+    # Not found – append
+    ensure_trailing_newline(lines)
+    lines.append(new_block)
     return lines, False
 
 
@@ -198,7 +251,7 @@ if _is_sensitive_raw == "":
 else:
     IS_SENSITIVE = _is_sensitive_raw in ("true", "yes", "1")
 
-# ── OVERWRITE: honour env var; None means "decide after existence check" ─────
+# ── OVERWRITE: honour env var; None means "decide per-env at values-file time" ─
 _overwrite_raw = os.environ.get("OVERWRITE", "").strip().lower()
 OVERWRITE: bool | None = (
     _overwrite_raw in ("true", "yes", "1") if _overwrite_raw else None
@@ -234,6 +287,15 @@ if errors:
         print(f"[ERROR] {e}", file=sys.stderr)
     sys.exit(1)
 
+# ── Pre-flight checks (only when DRY_RUN=false) ───────────────────────────────
+if not DRY_RUN:
+    if not os.environ.get("GITHUB_TOKEN", "").strip():
+        print("[ERROR] GITHUB_TOKEN is required when DRY_RUN=false.", file=sys.stderr)
+        sys.exit(1)
+    if not os.environ.get("GITHUB_REPO", "").strip():
+        print("[ERROR] GITHUB_REPO is required when DRY_RUN=false (e.g. org/repo-name).", file=sys.stderr)
+        sys.exit(1)
+
 # ── Derived names ─────────────────────────────────────────────────────────────
 TIMESTAMP = datetime.now().strftime("%Y%m%d%H%M%S")
 if not BRANCH_NAME:
@@ -264,6 +326,22 @@ if missing_templates:
           f"secret.yaml, deployment.yaml.", file=sys.stderr)
     sys.exit(1)
 
+# ── Extract metadata.name from configmap.yaml and secret.yaml ────────────────
+def extract_metadata_name(path: str) -> str:
+    """Read metadata.name from a Kubernetes YAML template file."""
+    with open(path) as fh:
+        for line in fh:
+            m = re.match(r"^\s*name:\s*(.+)", line)
+            if m:
+                # Strip quotes and Helm template markers if any
+                return m.group(1).strip().strip('"').strip("'")
+    raise ValueError(f"Could not find 'name:' under metadata in {path}")
+
+CONFIGMAP_REF_NAME = extract_metadata_name(CONFIGMAP_FILE)
+SECRET_REF_NAME    = extract_metadata_name(SECRET_FILE)
+print(f"[INFO]  ConfigMap ref name : {CONFIGMAP_REF_NAME}")
+print(f"[INFO]  Secret ref name    : {SECRET_REF_NAME}")
+
 # Validate per-env values files
 missing_values: list[str] = []
 for env in TARGET_ENVS:
@@ -276,7 +354,8 @@ if missing_values:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-#  STEP 1  –  Existence check  +  interactive overwrite prompt
+#  STEP 1  –  Existence check on shared templates ONLY
+#             (no overwrite prompt here — that's handled per-env in STEP 3)
 # ──────────────────────────────────────────────────────────────────────────────
 banner("STEP 1 – Existence check (shared templates)")
 
@@ -291,87 +370,92 @@ if key_in_cm or key_in_sec:
     source_lines = cm_lines if key_in_cm else sec_lines
     old_value    = get_existing_indented_value(source_lines, KEY)
 
-    print(f"\n[WARN]  Key '{KEY}' already exists in templates/{location}.")
-    print(f"  Current value : {old_value}")
-    print(f"  New value     : {'*' * len(VALUE) if IS_SENSITIVE else VALUE}")
-
-    if OVERWRITE is None:
-        while True:
-            ans = input("\n  Overwrite existing value? (yes/no): ").strip().lower()
-            if ans in ("yes", "y"):
-                OVERWRITE = True
-                break
-            elif ans in ("no", "n"):
-                OVERWRITE = False
-                break
-            else:
-                print("  Please enter yes or no.")
-
-    if not OVERWRITE:
-        print("[INFO]  User declined overwrite — no changes made.")
-        sys.exit(0)
-
-    print(f"[OK]    Overwriting '{KEY}'.")
+    print(f"\n[INFO]  Key '{KEY}' already exists in templates/{location}.")
+    print(f"  Current template ref : {old_value}")
+    print(f"  (Per-env values will be checked individually in STEP 3)")
+    # Template will be updated unconditionally — the Helm ref doesn't change,
+    # but we may need to move it between configmap ↔ secret if IS_SENSITIVE changed.
+    TEMPLATE_KEY_EXISTS = True
 else:
-    print(f"[OK]    Key '{KEY}' is new.")
-    OVERWRITE = False
+    print(f"[OK]    Key '{KEY}' is new in templates.")
+    TEMPLATE_KEY_EXISTS = False
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 #  STEP 2  –  templates/configmap.yaml  or  templates/secret.yaml
+#
+#  FIX: ConfigMap entries are now wrapped in {{- if .Values.<helm_key> }}
+#       just like deployment.yaml, so envs that don't set the value won't
+#       get an empty key rendered in the ConfigMap.
 # ──────────────────────────────────────────────────────────────────────────────
 banner("STEP 2 – Update shared template (configmap.yaml / secret.yaml)")
 
-# Re-read after the existence check (in case lines are re-used below)
+# Re-read fresh copies
 cm_lines  = read_lines(CONFIGMAP_FILE)
 sec_lines = read_lines(SECRET_FILE)
 
 if IS_SENSITIVE:
-    # Secret template uses Helm's b64enc — store plaintext in values files.
-    # The template line format is:
-    #   KEY: {{ .Values.helm_key | b64enc }}
+    # Secret template: {{ .Values.helm_key | b64enc }}
     helm_secret_ref = f"{{{{ .Values.{helm_key} | b64enc }}}}"
 
     if key_in_cm:
         write_lines(CONFIGMAP_FILE, remove_key_block_from_lines(cm_lines, KEY))
         print(f"[OK]    Removed '{KEY}' from configmap.yaml (moved to secret).")
-        cm_lines = read_lines(CONFIGMAP_FILE)  # refresh
+        cm_lines = read_lines(CONFIGMAP_FILE)
 
-    sec_lines, replaced = upsert_indented_line(
-        sec_lines, KEY,
-        f"  {KEY}: {helm_secret_ref}\n"
-    )
+    # Secrets don't typically use if-conditions (missing secret key = chart error),
+    # so we keep a plain entry here.  If you want if-wrapping in secrets too,
+    # mirror the configmap block below.
+    new_secret_line = f"  {KEY}: {helm_secret_ref}\n"
+    sec_lines, replaced = upsert_indented_line(sec_lines, KEY, new_secret_line)
     write_lines(SECRET_FILE, sec_lines)
     action = "Updated" if replaced else "Added"
     print(f"[OK]    {action} '{KEY}' in secret.yaml  (Helm ref: {helm_secret_ref})")
 
 else:
-    # ConfigMap: reference via {{ .Values.helm_key }}
+    # ConfigMap: wrap in {{- if .Values.<helm_key> }} so envs without the value
+    # don't get an empty key rendered.
     helm_ref = f"{{{{ .Values.{helm_key} }}}}"
 
     if key_in_sec:
         write_lines(SECRET_FILE, remove_key_block_from_lines(sec_lines, KEY))
         print(f"[OK]    Removed '{KEY}' from secret.yaml (moved to configmap).")
-        sec_lines = read_lines(SECRET_FILE)  # refresh
+        sec_lines = read_lines(SECRET_FILE)
 
-    cm_lines, replaced = upsert_indented_line(
-        cm_lines, KEY,
-        f'  {KEY}: "{helm_ref}"\n'
-    )
-    write_lines(CONFIGMAP_FILE, cm_lines)
-    action = "Updated" if replaced else "Added"
-    print(f"[OK]    {action} '{KEY}' in configmap.yaml  (Helm ref: {helm_ref})")
+    if ADD_IF_CONDITION:
+        new_cm_block = (
+            f"  {{{{- if .Values.{helm_key} }}}}\n"
+            f'  {KEY}: "{helm_ref}"\n'
+            f"  {{{{- end }}}}\n"
+        )
+        cm_lines, replaced = upsert_indented_block(cm_lines, KEY, new_cm_block)
+        write_lines(CONFIGMAP_FILE, cm_lines)
+        action = "Updated" if replaced else "Added"
+        print(
+            f"[OK]    {action} '{KEY}' in configmap.yaml  "
+            f"(if-wrapped Helm ref: {helm_ref})"
+        )
+    else:
+        # All envs targeted → safe to add without an if-guard
+        new_cm_line = f'  {KEY}: "{helm_ref}"\n'
+        cm_lines, replaced = upsert_indented_line(cm_lines, KEY, new_cm_line)
+        write_lines(CONFIGMAP_FILE, cm_lines)
+        action = "Updated" if replaced else "Added"
+        print(f"[OK]    {action} '{KEY}' in configmap.yaml  (Helm ref: {helm_ref})")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 #  STEP 3  –  Per-env values files
+#
+#  FIX: Overwrite check is now per-env.  If the key already exists in THIS
+#       env's values file we prompt (or honour OVERWRITE env var).  Envs that
+#       don't have the key yet are always written without any prompt.
 # ──────────────────────────────────────────────────────────────────────────────
 banner("STEP 3 – Update per-env values files")
 
 for env in TARGET_ENVS:
     values_path = os.path.join(env, VALUES_FILENAME[env])
 
-    # Use ruamel.yaml to safely parse + update, preserving comments & order
     y = YAML()
     y.preserve_quotes = True
     y.default_flow_style = False
@@ -385,6 +469,38 @@ for env in TARGET_ENVS:
         data = {}
 
     old = data.get(helm_key)
+
+    if old is not None:
+        # Key already exists in THIS env's values file → decide whether to overwrite
+        masked_old = "*" * len(str(old)) if IS_SENSITIVE else old
+        masked_new = "*" * len(VALUE)    if IS_SENSITIVE else VALUE
+
+        print(f"\n[WARN]  [{env}] Key '{helm_key}' already exists in {values_path}.")
+        print(f"  Current value : {masked_old}")
+        print(f"  New value     : {masked_new}")
+
+        env_overwrite: bool
+        if OVERWRITE is not None:
+            # Global OVERWRITE env var was set — honour it for every env
+            env_overwrite = OVERWRITE
+            print(f"  OVERWRITE={OVERWRITE} → {'overwriting' if OVERWRITE else 'skipping'}.")
+        else:
+            # Ask interactively for this specific env
+            while True:
+                ans = input(f"  Overwrite '{helm_key}' in [{env}]? (yes/no): ").strip().lower()
+                if ans in ("yes", "y"):
+                    env_overwrite = True
+                    break
+                elif ans in ("no", "n"):
+                    env_overwrite = False
+                    break
+                else:
+                    print("  Please enter yes or no.")
+
+        if not env_overwrite:
+            print(f"[INFO]  [{env}] Skipped — keeping existing value.")
+            continue
+
     data[helm_key] = VALUE  # always plaintext; secret.yaml does b64enc via Helm
 
     with open(values_path, "w") as fh:
@@ -410,8 +526,8 @@ raw = read_text(DEPLOYMENT_FILE)
 if f"name: {KEY}" in raw:
     print(f"[WARN]  '{KEY}' already referenced in deployment.yaml – skipping.")
 else:
-    ref_type = "secretKeyRef"  if IS_SENSITIVE else "configMapKeyRef"
-    ref_name = "cscs-secret"   if IS_SENSITIVE else "cscs-config"
+    ref_type = "secretKeyRef"    if IS_SENSITIVE else "configMapKeyRef"
+    ref_name = SECRET_REF_NAME  if IS_SENSITIVE else CONFIGMAP_REF_NAME
 
     lines = raw.splitlines(keepends=True)
 
@@ -462,10 +578,9 @@ else:
         sys.exit(1)
 
     # Derive correct indent from the env block indentation (env + 2 extra spaces)
-    item_indent = env_indent_str + "  "      # same level as other `- name:` entries
+    item_indent = env_indent_str + "  "
 
     if ADD_IF_CONDITION:
-        # Wrap the new env entry in a Helm if-block keyed on the helm_key value
         new_block = (
             f"{item_indent}{{{{- if .Values.{helm_key} }}}}\n"
             f"{item_indent}- name: {KEY}\n"
@@ -511,23 +626,6 @@ if DRY_RUN:
     print(f"[DRY_RUN] Would push to       : origin/{BRANCH_NAME}")
     print(f"[DRY_RUN] Would raise PR      : {BRANCH_NAME} → {BASE_BRANCH}")
 else:
-    if not GITHUB_TOKEN:
-        print("[ERROR] GITHUB_TOKEN is required when DRY_RUN=false.", file=sys.stderr)
-        sys.exit(1)
-    if not GITHUB_REPO:
-        print("[ERROR] GITHUB_REPO is required when DRY_RUN=false (e.g. org/repo-name).", file=sys.stderr)
-        sys.exit(1)
-
-    # Verify working tree is clean before branching
-    status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
-    if status.stdout.strip():
-        print(
-            "[ERROR] Working tree has uncommitted changes. Commit or stash them before running.",
-            file=sys.stderr,
-        )
-        print(status.stdout.strip(), file=sys.stderr)
-        sys.exit(1)
-
     commit_msg = (
         f"chore(env): add/update '{KEY}' in {APP_NAME} [{envs_label}]\n\n"
         f"Key            : {KEY}\n"
