@@ -160,3 +160,6 @@ data:
   {{- if .Values.backend_updated_url }}
   BACKEND_UPDATED_URL:                  "{{ .Values.backend_updated_url }}"
   {{- end }}
+  {{- if .Values.new_service_url }}
+  NEW_SERVICE_URL: "{{ .Values.new_service_url }}"
+  {{- end }}
