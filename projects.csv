@@ -1,0 +1,6 @@
+project,server_name,directory,helm,secret_file
+cscs,dev,cscs/dev,true,
+cscs,qa,cscs/qa,true,
+cscs,demo,cscs/demo,true,
+flat5,dev,flat5/flat5-dev,false,flat5-secret.yaml
+flat5,stage,flat5/flat5-stage,false,flat5-secret.yaml

@@ -1,13 +1,13 @@
 # ──────────────────────────────────────────────────────────────────────────────
-#  dev-values.yaml
+#  demo-values.yaml
 # ──────────────────────────────────────────────────────────────────────────────
 
 # ── Cluster / namespace ───────────────────────────────────────────────────────
-namespace: cscs-dev
-environment: dev
+namespace: cscs-demo
+environment: demo
 
 # ── Spring / Java ─────────────────────────────────────────────────────────────
-spring_profile: dev
+spring_profile: demo
 log4j_format_lookup: "true"
 
 # ── MySQL ─────────────────────────────────────────────────────────────────────
@@ -113,7 +113,14 @@ kafka_bootstrapserver_protocol: ""
 kafka_bootstrapserver_sasl_mechanism: ""
 kafka_bootstrapserver_username: ""
 kafka_bootstrapserver_password: ""
+
+# ── env-specific URLs ─────────────────────────────────────────────────────────
+# test_url intentionally absent — qa only
+# FIX: jenkins_url and host_url added — previously missing, causing bare
+#      template references in configmap.yaml to render as empty strings
 jenkins_url: jenkins.cscs.com
+host_url: hosturl.cscs.com
 backend_url: hosturl.cscs.com
-ai_url: ai.cscs.io
 ai_updated_url: ai.cscs.io
+backend_updated_url: backendup.cscs.com
+# ai_url, domain_host_url absent in demo

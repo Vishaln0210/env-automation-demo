@@ -1,0 +1,135 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-auth-server
+  namespace: flat5-dev
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-server
+  template:
+    metadata:
+      labels:
+        app: auth-server
+    spec:
+      imagePullSecrets:
+        - name: artifact-registry-access
+      containers:
+        - name: auth-server
+          image: gcr.io/flat5-project/auth-server:latest
+          imagePullPolicy: Always
+          env:
+            - name: SPRING_PROFILE
+              value: dev
+            - name: MYSQL_USER_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: MYSQL_USER_NAME
+            - name: MYSQL_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: flat5-secret
+                  key: MYSQL_DB_PASSWORD
+            - name: MYSQL_DB_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: MYSQL_DB_IP
+            - name: MYSQL_DATABASE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: AUTH_SERVER_DATABASE_NAME
+            - name: APPLICATION_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: AUTH_SERVER_CONTEXT_PATH
+            - name: AUTH_VERIFY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: AUTH_VERIFY_URL
+            - name: AUTH_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: AUTH_BASE_URL
+            - name: AUTH_JWT_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: AUTH_JWT_SECRET
+            - name: NOTIFICATION_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: NOTIFICATION_URL
+            - name: CMS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: CMS_URL
+            - name: DRIVER_PAY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: DRIVER_PAY_URL
+            - name: GOOGLE_OAUTH_REDIRECT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: GOOGLE_OAUTH_REDIRECT_URL
+            - name: GOOGLE_OAUTH_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: GOOGLE_OAUTH_CLIENT_ID
+            - name: GOOGLE_OAUTH_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: flat5-secret
+                  key: GOOGLE_OAUTH_SECRET_KEY
+            - name: DOMAIN_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: DOMAIN_NAME
+            - name: LOAD_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: LOAD_BASE_URL
+            - name: AUTH_TWOFA_EXP_TIME
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: AUTH_TWOFA_EXP_TIME
+            - name: AUTH_JWT_EXPIRATION_DURATION_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: flat5-env-config
+                  key: AUTH_JWT_EXPIRATION_DURATION_MS
+            - name: JDBC_URL
+              value: "jdbc:mysql://${MYSQL_DB_IP}:3306/${MYSQL_DATABASE_NAME}?createDatabaseIfNotExist=true"
+          livenessProbe:
+            httpGet:
+              path: /auth/actuator/health
+              port: 7000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /auth/actuator/health
+              port: 7000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 60"]
+      terminationGracePeriodSeconds: 60

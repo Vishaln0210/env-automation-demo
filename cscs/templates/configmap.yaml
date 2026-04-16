@@ -131,14 +131,32 @@ data:
   {{- if .Values.kafka_bootstrapserver_password }}
   KAFKA_BOOTSTRAPSERVER_PASSWORD:       "{{ .Values.kafka_bootstrapserver_password }}"
   {{- end }}
-  JENKINS_URL: "{{ .Values.jenkins_url }}"
-  HOST_URL: "{{ .Values.host_url }}"
+
+  # ── env-specific URLs — all guarded so missing keys render nothing ──────────
+  {{- if .Values.jenkins_url }}
+  JENKINS_URL:                          "{{ .Values.jenkins_url }}"
+  {{- end }}
+
+  {{- if .Values.host_url }}
+  HOST_URL:                             "{{ .Values.host_url }}"
+  {{- end }}
+
+  {{- if .Values.domain_host_url }}
+  DOMAIN_HOST_URL:                      "{{ .Values.domain_host_url }}"
+  {{- end }}
+
+  {{- if .Values.backend_url }}
+  BACKEND_URL:                          "{{ .Values.backend_url }}"
+  {{- end }}
+
   {{- if .Values.ai_url }}
-  AI_URL: "{{ .Values.ai_url }}"
+  AI_URL:                               "{{ .Values.ai_url }}"
   {{- end }}
+
   {{- if .Values.ai_updated_url }}
-  AI_UPDATED_URL: "{{ .Values.ai_updated_url }}"
+  AI_UPDATED_URL:                       "{{ .Values.ai_updated_url }}"
   {{- end }}
+
   {{- if .Values.backend_updated_url }}
-  BACKEND_UPDATED_URL: "{{ .Values.backend_updated_url }}"
+  BACKEND_UPDATED_URL:                  "{{ .Values.backend_updated_url }}"
   {{- end }}

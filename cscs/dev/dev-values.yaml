@@ -1,13 +1,13 @@
 # ──────────────────────────────────────────────────────────────────────────────
-#  demo-values.yaml
+#  dev-values.yaml
 # ──────────────────────────────────────────────────────────────────────────────
 
 # ── Cluster / namespace ───────────────────────────────────────────────────────
-namespace: cscs-demo
-environment: demo
+namespace: cscs-dev
+environment: dev
 
 # ── Spring / Java ─────────────────────────────────────────────────────────────
-spring_profile: demo
+spring_profile: dev
 log4j_format_lookup: "true"
 
 # ── MySQL ─────────────────────────────────────────────────────────────────────
@@ -113,6 +113,12 @@ kafka_bootstrapserver_protocol: ""
 kafka_bootstrapserver_sasl_mechanism: ""
 kafka_bootstrapserver_username: ""
 kafka_bootstrapserver_password: ""
+
+# ── env-specific URLs ─────────────────────────────────────────────────────────
+# test_url intentionally absent — qa only (sensitive, lives in secret.yaml)
+jenkins_url: jenkins.cscs.com
+host_url: hosturl.cscs.com
 backend_url: hosturl.cscs.com
+ai_url: ai.cscs.io
 ai_updated_url: ai.cscs.io
-backend_updated_url: backendup.cscs.com
+# domain_host_url, backend_updated_url absent in dev

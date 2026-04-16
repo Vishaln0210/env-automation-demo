@@ -113,10 +113,12 @@ kafka_bootstrapserver_protocol: ""
 kafka_bootstrapserver_sasl_mechanism: ""
 kafka_bootstrapserver_username: ""
 kafka_bootstrapserver_password: ""
+
+# ── env-specific URLs ─────────────────────────────────────────────────────────
+# test_url is qa-only and sensitive — lives in secret.yaml under {{- if }} guard
 test_url: testurl.cscs.com
 jenkins_url: jenkins.cscs.com
 host_url: hosturl.cscs.com
 domain_host_url: hosturl.cscs.com
-host_url_updated: hosturl.cscs.com
-new_url: hosturl.cscs.com
 backend_url: hosturl.cscs.com
+# ai_url, ai_updated_url, backend_updated_url absent in qa
