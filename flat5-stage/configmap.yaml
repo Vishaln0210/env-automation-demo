@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flat5-env-config
+  namespace: flat5-dev
+data:
+
+  # ── Shared: MySQL ───────────────────────────────────────────────────────────
+  MYSQL_DB_IP:                    "10.1.0.1"
+  MYSQL_USER_NAME:                "flat5_dev_user"
+
+  # ── Shared: Auth ────────────────────────────────────────────────────────────
+  AUTH_VERIFY_URL:                "http://auth-server:7000/auth/verify"
+  AUTH_BASE_URL:                  "http://auth-server:7000"
+  AUTH_JWT_SECRET:                "flat5-dev-jwt-secret"
+
+  # ── Shared: Service URLs ────────────────────────────────────────────────────
+  NOTIFICATION_URL:               "http://notification-api:7600"
+  CMS_URL:                        "http://cms-api:8080"
+  DRIVER_PAY_URL:                 "http://driver-pay-api:8090"
+
+  # ── auth-server ─────────────────────────────────────────────────────────────
+  AUTH_SERVER_DATABASE_NAME:      "flat5_auth_db"
+  AUTH_SERVER_CONTEXT_PATH:       "/auth"
+  GOOGLE_OAUTH_REDIRECT_URL:      "http://localhost:3000/oauth/callback"
+  GOOGLE_OAUTH_CLIENT_ID:         "flat5-dev-google-client-id"
+  DOMAIN_NAME:                    "flat5-dev.com"
+  LOAD_BASE_URL:                  "http://load-api:8100"
+  AUTH_TWOFA_EXP_TIME:            "300"
+  AUTH_JWT_EXPIRATION_DURATION_MS: "86400000"
+
+  # ── notification-api ────────────────────────────────────────────────────────
+  NOTIFICATION_DATABASE_NAME:     "flat5_notification_db"
+  NOTIFICATION_API_CONTEXT_PATH:  "/na"
+  SEND_GRID_USERNAME:             "apikey"
+  RATE_LIMIT_URL:                 "http://rate-limit-api:8200"
+  CAM_API_URL:                    "http://asset-management-api:7300"
+
+  # ── asset-management-api ────────────────────────────────────────────────────
+  ASSET_MANAGEMENT_DATABASE_NAME: "flat5_asset_db"
+  ASSET_MANAGEMENT_CONTEXT_PATH:  "/cam"
+  MASTER_URL:                     "http://master-api:8300"
+  ASSET_ALERT_URL:                "http://asset-alert-api:8400"
+  ASSET_URL:                      "http://asset-api:8500"
+  VT_SERVER_URL:                  "http://vt-server:8600"
+  SLOC_CRON_EXPRESSION:           "0 0 * * * ?"
+  SLOC_API_KEY:                   "flat5-dev-sloc-key"
+  MQTT_MINEW_ENABLED:             "false"
+  MQTT_SURFACT_ENABLED:           "false"
+  NOTIFICATION_TIME_ZONE:         "America/New_York"
+  REDIS_HOST: "redis.dev.local"
